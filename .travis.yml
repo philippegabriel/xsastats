@@ -2,3 +2,4 @@ language: bash
 script: 
   - make -f fetch.mk
   - make 
+  - make display
