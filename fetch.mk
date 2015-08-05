@@ -7,15 +7,18 @@ AdvisoryHtml=advisory-NNN.html
 XSAList=$(shell seq 26 139)
 XSAUrlList=$(foreach i,$(XSAList),$(subst NNN,$(i),$(AdvisoryHtml)))
 PatchList=patchlist.csv
-all: $(XSAUrlList) $(PatchList) 
+all: start $(XSAUrlList) $(PatchList) 
 %.html:
-	wget -q -nc $(BaseUrl)/$@ || true
-reallyclean:
+	@wget -q -nc $(BaseUrl)/$@ || true
+reallyclean: clean
 	rm -f $(XSAUrlList)
 clean:
 	rm -f $(PatchList) *.patch
+start:
+	@echo "Downloading advisories from: $(BaseUrl)..."
 $(PatchList): 
-	grep -P "^<a href=.*?patch\">" *.html > /tmp/grepList.txt
-	cat  /tmp/grepList.txt | sed 's/^.*<a href="\(xsa.*patch\)">.*$$/\1/'p > $@
+	@echo "Extracting list of patches..."
+	@grep -P "^<a href=.*?patch\">" *.html > /tmp/grepList.txt
+	@cat  /tmp/grepList.txt | sed 's/^.*<a href="\(xsa.*patch\)">.*$$/\1/'p > $@
 test:
 	@echo $(XSAUrlList)

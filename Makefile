@@ -4,13 +4,19 @@
 .PHONY: clean reallyclean test
 BaseUrl=http://xenbits.xen.org/xsa
 PatchList=patchlist.csv
+XSAStats=XSAStats.csv
 PatchFiles=$(shell cat patchlist.csv)
-all: $(PatchFiles)
+all: start $(PatchFiles) $(XSAStats)
+start:
+	@echo 'Downloading patches...'
 %.patch:
-	wget -q -nc $(BaseUrl)/$@
-reallyclean:
-	rm -f $(XSAUrlList)
+	@wget -q -nc $(BaseUrl)/$@
+$(XSAStats):
+	@echo 'Generating stats...'
+	@grep '^+++' $(PatchFiles) > /tmp/grepPatches.txt
+	@sed 's/^\(xsa[0-9]*\).*+++ .\/\([[:graph:]]*\).*$$/\2,\1/'  /tmp/grepPatches.txt | sort | uniq > $@
 clean:
-	rm -f $(PatchList) *.patch
-test:
-	@echo $(PatchFiles)
+	rm -f $(XSAStats)
+display:
+	@echo '#######################Files changed per xsa###############################'
+	@cat $(XSAStats)
