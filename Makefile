@@ -29,6 +29,6 @@ reallyclean: clean
 	rm -f *.html *.patch
 display:
 	@echo '#######################Files changed per xsa###############################'
-	@cat $(XSAStats)
+	./XSAacc.pl < $(XSAStats)
 test: $(XSAUrlList)
 	@cat $(XSAUrlList)
