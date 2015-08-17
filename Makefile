@@ -2,38 +2,33 @@
 #And compute defect density metrics
 #
 .PHONY: FetchPatches Patchfiles clean reallyclean display test
-BaseUrl=http://xenbits.xen.org/xsa
+BaseUrl=http://xenbits.xen.org/xsa/
 AdvisoryHtml=advisory-NNN.html
 XSAList=$(shell seq 26 139)
-XSAUrlList=$(foreach i,$(XSAList),$(subst NNN,$(i),$(AdvisoryHtml)))
+XSAUrlList=xsaURLList.csv
 PatchList=patchlist.csv
-PatchFiles=patchfiles.ok
 XSAStats=XSAStats.csv
-all: FetchAdvisories $(XSAUrlList) $(PatchList) FetchPatches $(PatchFiles) $(XSAStats) display
-FetchAdvisories:
+all: $(XSAUrlList) FetchAdvisories $(PatchList) FetchPatches $(XSAStats) display
+$(XSAUrlList):
+	$(foreach i,$(XSAList),$(shell echo $(subst NNN,$(i),$(AdvisoryHtml)) >> $@))
+FetchAdvisories:  $(XSAUrlList)
 	@echo "Downloading advisories from: $(BaseUrl)..."
-FetchPatches:
-	@echo 'Downloading patches...'
-%.html:
-	@wget -q -nc $(BaseUrl)/$@ || echo 'not found' > $@
-%.patch:
-	@wget -q -nc $(BaseUrl)/$@
-$(PatchList): $(XSAUrlList)
+	wget -q -nc --base=$(BaseUrl) -i $< || true
+$(PatchList):
 	@echo "Extracting list of patches..."
-	@grep -P "^<a href=.*?patch\">" $^ > /tmp/grepList.txt
-	@cat  /tmp/grepList.txt | sed 's/^.*<a href="\(xsa.*patch\)">.*$$/\1/'p > $@
-$(PatchFiles): $(shell cat $(PatchList))
-	touch $@
+	perl -n -e '/^<a href=\"(.*?patch)\">/ && print "$$1\n"' *.html > $@
+FetchPatches: $(PatchList)
+	@echo 'Downloading patches...'
+	wget -q -nc --base=$(BaseUrl)  -i $<
 $(XSAStats): $(PatchFiles)
 	@echo 'Generating stats...'
-	@grep '^+++' *.patch > /tmp/grepPatches.txt
-	@sed 's/^\(xsa[0-9]*\).*+++ .\/\([[:graph:]]*\).*$$/\2,\1/'  /tmp/grepPatches.txt | sort | uniq > $@
+	grep '^+++' *.patch  | perl -n -e '/^(xsa[0-9]+).*?\/([[:graph:]]*).*$$/ & print "$$2,$$1\n"' | sort | uniq > $@
 clean:
-	rm -f $(XSAStats) $(PatchFiles) $(PatchList)
+	rm -f *.csv
 reallyclean: clean
-	rm -f $(XSAUrlList) *.patch
+	rm -f *.html *.patch
 display:
 	@echo '#######################Files changed per xsa###############################'
 	@cat $(XSAStats)
-test:
-	@echo $(XSAUrlList)
+test: $(XSAUrlList)
+	@cat $(XSAUrlList)
