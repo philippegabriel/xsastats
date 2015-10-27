@@ -35,6 +35,7 @@ clean:
 reallyclean: clean
 	rm -f *.html *.patch
 display: $(XSAStats)
+	@cat README.md
 	@echo '#######################Files changed per xsa###############################'
 	@cat $(XSAStats) |  sed -r 's/^([^,]+),([^,]+),(.*)/|\1X|\2X|\3X|/' |  column -t -sX
 test: 
