@@ -7,8 +7,9 @@ AdvisoryHtml=advisory-NNN.html
 XSAList=$(shell seq 26 139)
 XSAUrlList=xsaURLList.csv
 PatchList=patchlist.csv
+XSAFileList=XSAFileList.csv
 XSAStats=XSAStats.csv
-all: $(XSAUrlList) FetchAdvisories $(PatchList) FetchPatches $(XSAStats) display
+all: $(XSAUrlList) FetchAdvisories $(PatchList) FetchPatches $(XSAFileList) $(XSAStats) display
 $(XSAUrlList):
 	$(foreach i,$(XSAList),$(shell echo $(subst NNN,$(i),$(AdvisoryHtml)) >> $@))
 FetchAdvisories:  $(XSAUrlList)
@@ -20,15 +21,17 @@ $(PatchList):
 FetchPatches: $(PatchList)
 	@echo 'Downloading patches...'
 	wget -q -nc --base=$(BaseUrl)  -i $<
-$(XSAStats): $(PatchFiles)
+$(XSAFileList): $(PatchFiles)
 	@echo 'Generating stats...'
 	grep '^+++' *.patch  | perl -n -e '/^(xsa[0-9]+).*?\/([[:graph:]]*).*$$/ & print "$$2,$$1\n"' | sort | uniq > $@
+$(XSAStats): $(XSAFileList)
+	./XSAacc.pl < $< > $@
 clean:
 	rm -f *.csv
 reallyclean: clean
 	rm -f *.html *.patch
-display:
+display: $(XSAStats)
 	@echo '#######################Files changed per xsa###############################'
-	@./XSAacc.pl < $(XSAStats)
+	@cat $(XSAStats) |  sed -r 's/^([^,]+),([^,]+),(.*)/|\1X|\2X|\3X|/' |  column -t -sX
 test: $(XSAUrlList)
 	@cat $(XSAUrlList)

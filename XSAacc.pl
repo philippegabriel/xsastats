@@ -11,5 +11,6 @@ while(<>){
 }
 my @output;
 map{push @output,"$freq{$_},$_,$xsa{$_}\n"}keys %freq;
+print "#patches,file modified,xsa(s) in scope\n";
 print sort {$b <=> $a} (@output);
 exit 0;
