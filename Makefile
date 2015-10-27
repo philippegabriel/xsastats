@@ -4,7 +4,11 @@
 .PHONY: FetchPatches Patchfiles clean reallyclean display test
 BaseUrl=http://xenbits.xen.org/xsa/
 AdvisoryHtml=advisory-NNN.html
-XSAList=$(shell seq 26 139)
+configFile:=README.md
+config=$(lastword $(shell grep $(1) $(configFile)))
+firstXSA:=$(call config,'First XSA')
+lastXSA:=$(call config,'Last XSA')
+XSAList=$(shell seq $(firstXSA) $(lastXSA))
 XSAUrlList=xsaURLList.csv
 PatchList=patchlist.csv
 XSAFileList=XSAFileList.csv
@@ -33,5 +37,5 @@ reallyclean: clean
 display: $(XSAStats)
 	@echo '#######################Files changed per xsa###############################'
 	@cat $(XSAStats) |  sed -r 's/^([^,]+),([^,]+),(.*)/|\1X|\2X|\3X|/' |  column -t -sX
-test: $(XSAUrlList)
-	@cat $(XSAUrlList)
+test: 
+	@echo $(XSAList)
