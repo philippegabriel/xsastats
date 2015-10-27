@@ -7,3 +7,8 @@
 * Fetch Xen Security Advisory (XSA), from http://xenbits.xen.org/xsa/
 * Fetch patch files associated with them
 * Generate a csv file (at https://travis-ci.org/philippegabriel/xsastats ) ranking Xen source files by number of patches
+
+#### XSA in scope
+Initial XSA: 26
+
+Final XSA: 139
