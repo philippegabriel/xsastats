@@ -11,9 +11,10 @@ lastXSA:=$(call config,'Last XSA')
 XSAList=$(shell seq $(firstXSA) $(lastXSA))
 XSAUrlList=xsaURLList.csv
 PatchList=patchlist.csv
+ChunkList=chunklist.csv
 XSAFileList=XSAFileList.csv
 XSAStats=XSAStats.csv
-all: $(XSAUrlList) FetchAdvisories $(PatchList) FetchPatches $(XSAFileList) $(XSAStats) display
+all: $(XSAUrlList) FetchAdvisories $(PatchList) FetchPatches $(XSAFileList)  $(ChunkList) $(XSAStats) display
 $(XSAUrlList):
 	$(foreach i,$(XSAList),$(shell echo $(subst NNN,$(i),$(AdvisoryHtml)) >> $@))
 FetchAdvisories:  $(XSAUrlList)
@@ -25,18 +26,27 @@ $(PatchList):
 FetchPatches: $(PatchList)
 	@echo 'Downloading patches...'
 	wget -q -nc --base=$(BaseUrl)  -i $<
-$(XSAFileList): $(PatchFiles)
+$(XSAFileList):
 	@echo 'Generating stats...'
-	grep '^+++' *.patch  | perl -n -e '/^(xsa[0-9]+).*?\/([[:graph:]]*).*$$/ & print "$$2,$$1\n"' | sort | uniq > $@
-$(XSAStats): $(XSAFileList)
-	./XSAacc.pl < $< > $@
+	grep '^+++' *.patch  | perl -n -e '/^(xsa[0-9]+).*?\/([[:graph:]]*).*$$/ & print "$$2;$$1\n"' | sort | uniq > $@
+$(ChunkList):
+	@echo 'Analysing diffs...'
+	./chunk2csv.pl *.patch > $@	
+$(XSAStats): $(XSAFileList) $(ChunkList)
+	echo "####################################################################################" > $@
+	echo "#               patches,file modified,xsa(s) in scope" >> $@
+	echo "####################################################################################" >> $@
+	./XSAacc.pl < $(XSAFileList) >> $@
+	echo "####################################################################################" >> $@
+	echo "#               patches,file modified & function,xsa(s) in scope" >> $@
+	echo "####################################################################################" >> $@
+	sort $(ChunkList) | uniq | ./XSAacc.pl >> $@
 clean:
 	rm -f *.csv
 reallyclean: clean
 	rm -f *.html *.patch
 display: $(XSAStats)
 	@cat README.md
-	@echo '#######################Files changed per xsa###############################'
-	@cat $(XSAStats) |  sed -r 's/^([^,]+),([^,]+),(.*)/|\1X|\2X|\3X|/' |  column -t -sX
+	@cat $(XSAStats)
 test: 
 	@echo $(XSAList)
